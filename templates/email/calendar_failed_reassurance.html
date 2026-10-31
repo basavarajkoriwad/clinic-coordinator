@@ -1,0 +1,14 @@
+<p>Dear <strong>{{patient_first_name}}</strong>,</p>
+<p>Thank you for your payment of <strong>INR {{amount_inr}}</strong> (Reference: <code style="font-family: monospace;">{{payment_ref}}</code>).</p>
+<p>Your payment is verified and confirmed. During calendar synchronization, our scheduling service experienced a brief temporary delay. Please be assured that your slot reservation has been extended and is safely held for you.</p>
+
+<div class="card" style="border-left: 4px solid #059669;">
+  <div style="font-weight: 700; color: #047857; margin-bottom: 6px;">Staff Action in Progress</div>
+  <p style="margin: 0; font-size: 13px; color: #475569;">
+    A priority front-desk task has been assigned to lock in your calendar booking manually. You will receive an updated calendar confirmation shortly.
+  </p>
+</div>
+
+<div style="text-align: center; margin: 24px 0;">
+  <a href="{{site_url}}" class="btn" target="_blank">Return to Clinic Portal</a>
+</div>

@@ -1,0 +1,10 @@
+{{content_text}}
+
+To schedule a consultation via our confidential WhatsApp service, visit:
+{{site_url}}
+
+To unsubscribe from the weekly digest at any time, visit:
+{{unsubscribe_url}}
+
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038

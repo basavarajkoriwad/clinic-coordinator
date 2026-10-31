@@ -1,0 +1,28 @@
+<p>Dear <strong>{{patient_first_name}}</strong>,</p>
+<p>Your payment has been received and your appointment is officially confirmed on our clinician calendar. We look forward to welcoming you.</p>
+
+<div class="card">
+  <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #059669; margin-bottom: 12px; letter-spacing: 0.5px;">Appointment Details</div>
+  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; color: #64748b;">Clinician</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f172a;">{{doctor_name}}</td></tr>
+    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; color: #64748b;">Service</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: #334155;">Consultation</td></tr>
+    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; color: #64748b;">Date & Time</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #059669;">{{appointment_time_str}}</td></tr>
+    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; color: #64748b;">Mode & Location</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: #334155;">{{appointment_mode}}</td></tr>
+    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; color: #64748b;">Payment Reference</td><td style="padding: 8px 0; text-align: right; font-family: monospace; color: #475569;">{{payment_ref}}</td></tr>
+    <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 0; color: #64748b;">Invoice Number</td><td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700; color: #0f172a;">{{invoice_number}}</td></tr>
+    <tr><td style="padding: 8px 0; color: #64748b;">Amount Paid</td><td style="padding: 8px 0; text-align: right; font-weight: 800; color: #059669; font-size: 14px;">INR {{amount_inr}}</td></tr>
+  </table>
+</div>
+
+<p style="font-size: 13px; color: #334155;">
+  Your official GST/tax invoice is attached to this email as a PDF. You can also view and download it at any time using the link below:
+</p>
+
+<div style="text-align: center; margin: 24px 0;">
+  <a href="{{invoice_download_url}}" class="btn" target="_blank">View / Download Tax Invoice (PDF)</a>
+</div>
+
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 12px; color: #475569;">
+  <strong>Clinic Location:</strong> Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038<br>
+  <strong>Check-in Note:</strong> Please arrive 10 minutes prior to your scheduled consultation time.
+</div>

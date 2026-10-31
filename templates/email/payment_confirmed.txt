@@ -1,0 +1,20 @@
+Dear {{patient_first_name}},
+
+Your appointment has been confirmed and registered on our clinician calendar.
+
+APPOINTMENT SUMMARY:
+- Clinician: {{doctor_name}}
+- Service: Consultation
+- Date & Time: {{appointment_time_str}}
+- Mode & Location: {{appointment_mode}}
+- Amount Paid: INR {{amount_inr}}
+- Payment Reference: {{payment_ref}}
+- Invoice Number: {{invoice_number}}
+
+Your official Tax Invoice PDF is attached to this email. You may also download it here:
+{{invoice_download_url}}
+
+Clinic Address:
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038
+Telephony: {{clinic_phone}}

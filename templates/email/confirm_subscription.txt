@@ -1,0 +1,11 @@
+Dear {{patient_name}},
+
+You recently requested to subscribe to updates from The Bengaluru Clinic.
+
+To confirm your subscription, please visit:
+{{confirm_url}}
+
+If you did not request this, you can safely ignore this email. You will not receive any marketing emails without clicking this confirmation link.
+
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038

@@ -1,0 +1,25 @@
+Dear {{patient_name}},
+
+Thank you for subscribing to The Bengaluru Clinic.
+
+ABOUT OUR PRACTICE:
+The Bengaluru Clinic is an outpatient center dedicated to confidential clinical care, specializing in relationship therapy, clinical psychology, psychiatry, and sexual wellbeing. Located in Indiranagar, Bengaluru, our practice provides a calm, discreet environment staffed by experienced, licensed clinicians.
+
+HOW BOOKING WORKS VIA WHATSAPP:
+1. Choose Your Clinician & Time: Select your preferred practitioner and available slot.
+2. 15-Minute Reservation: Your chosen slot is held exclusively for you for 15 minutes.
+3. Secure Payment & Confirmation: Pay via the secure payment link to receive immediate confirmation, receipt, and tax invoice.
+
+OUR PRIVACY STANDARD:
+- No diagnoses or conditions in notifications or message headers.
+- PIN protection for shared or household mobile numbers.
+- Two-factor OTP authentication for clinical summaries and records.
+
+CLINIC INFORMATION:
+- Address: {{clinic_address}}
+- Hours: Monday through Saturday (9:00 AM - 8:00 PM)
+- Phone: {{clinic_phone}}
+- Book online: {{site_url}}
+
+To manage your email preferences or unsubscribe at any time, visit:
+{{unsubscribe_url}}

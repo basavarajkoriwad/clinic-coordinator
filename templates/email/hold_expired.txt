@@ -1,0 +1,9 @@
+Dear {{patient_first_name}},
+
+This is a gentle note that your 15-minute slot reservation has elapsed. No charges were made.
+
+You can select a new consultation time whenever you are ready by visiting:
+{{site_url}}
+
+The Bengaluru Clinic
+Suite 302, Indiranagar, Bengaluru

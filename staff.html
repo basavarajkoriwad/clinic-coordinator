@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Operations Cockpit - The Bengaluru Clinic</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-lg">
+        +
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white tracking-wide">The Bengaluru Clinic</h1>
+        <p class="text-xs text-slate-400">Staff Operations Cockpit & Exception Oversight</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-4 text-xs">
+      <div class="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-full px-3 py-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300 font-medium">Live Polling (2s)</span>
+      </div>
+      <div class="text-slate-400 font-mono" id="lastUpdated">Updated: --:--:--</div>
+      <div class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono text-[10px]">
+        READ-ONLY VIEW
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <!-- Metrics Grid -->
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Confirmed Today</div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <span class="text-2xl font-bold text-emerald-400 font-mono" id="metricConfirmed">0</span>
+          <span class="text-[10px] text-emerald-500/80 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Setmore</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Active Holds (15m)</div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <span class="text-2xl font-bold text-amber-400 font-mono" id="metricHolds">0</span>
+          <span class="text-[10px] text-amber-500/80 font-medium bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">TTL Lock</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Open Tasks</div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <span class="text-2xl font-bold text-blue-400 font-mono" id="metricTasks">0</span>
+          <span class="text-[10px] text-blue-500/80 font-medium bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">SLA Queue</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">P0 Urgent</div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <span class="text-2xl font-bold text-rose-400 font-mono" id="metricP0">0</span>
+          <span class="text-[10px] text-rose-500/80 font-medium bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">Critical</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">P1 High (Calls)</div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <span class="text-2xl font-bold text-orange-400 font-mono" id="metricP1">0</span>
+          <span class="text-[10px] text-orange-500/80 font-medium bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">30m SLA</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Telephony Calls</div>
+        <div class="mt-1 flex items-baseline justify-between">
+          <span class="text-2xl font-bold text-sky-400 font-mono" id="metricCalls">0</span>
+          <span class="text-[10px] text-sky-500/80 font-medium bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">In/Out</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-Column Operational Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Left Column (8 cols): Prioritized Task Queue & Calendar -->
+      <div class="lg:col-span-7 space-y-6">
+        <!-- Prioritized Task & Exception Queue -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/50">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <h2 class="text-sm font-semibold text-white">Prioritized Task & Exception Queue</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono" id="taskCountBadge">0 Total Tasks</span>
+          </div>
+          
+          <div class="p-4 divide-y divide-slate-800/60 max-h-[460px] overflow-y-auto space-y-3" id="taskQueueContainer">
+            <div class="text-center py-8 text-xs text-slate-500">Loading task queue...</div>
+          </div>
+        </section>
+
+        <!-- Live Calendar & Inventory Table -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/50">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h2 class="text-sm font-semibold text-white">Live Calendar & Slot Inventory (Setmore)</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono" id="slotCountBadge">0 Slots</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950/60 text-slate-400 text-[11px] font-semibold border-b border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-4">Slot ID</th>
+                  <th class="py-2.5 px-4">Clinician</th>
+                  <th class="py-2.5 px-4">Time</th>
+                  <th class="py-2.5 px-4">Status</th>
+                  <th class="py-2.5 px-4">Hold / Booking Ref</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 font-mono text-[11px]" id="calendarTableBody">
+                <tr><td colspan="5" class="py-4 text-center text-slate-500">Loading calendar slots...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column (5 cols): Call Log & Audit Chain -->
+      <div class="lg:col-span-5 space-y-6">
+        <!-- Telephony Call Log -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/50">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+              <h2 class="text-sm font-semibold text-white">Telephony Call Log (+91 80 4000 0000)</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono" id="callCountBadge">0 Calls</span>
+          </div>
+
+          <div class="p-3 divide-y divide-slate-800/60 max-h-[220px] overflow-y-auto space-y-2 text-xs" id="callLogContainer">
+            <div class="text-center py-6 text-slate-500">No calls recorded.</div>
+          </div>
+        </section>
+
+        <!-- SHA256 Tamper-Evident Audit Chain -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/50">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+              <h2 class="text-sm font-semibold text-white">Tamper-Evident SHA256 Audit Chain</h2>
+            </div>
+            <span class="text-[10px] text-purple-400 font-mono bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">Append-Only</span>
+          </div>
+
+          <div class="p-3 bg-slate-950/40 text-[11px] text-slate-400 border-b border-slate-800/60">
+            Cryptographic ledger linking every booking, payment, security, and crisis event via SHA256 hash chaining.
+          </div>
+
+          <div class="p-3 divide-y divide-slate-800/60 max-h-[300px] overflow-y-auto space-y-2 text-xs font-mono" id="auditLogContainer">
+            <div class="text-center py-6 text-slate-500">Loading audit ledger...</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER WITH VISIBLE BUILD VERSION -->
+  <footer class="max-w-7xl mx-auto px-6 py-4 border-t border-slate-800 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div>Staff Operations Cockpit · Read-Only System View</div>
+    <div id="buildVersionBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px] shadow-xs">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span>Build: 2026-10-28 09:45 IST (v2.3-patient-name-storage)</span>
+    </div>
+  </footer>
+
+  <script>
+    function formatTime(isoStr) {
+      if (!isoStr) return '--';
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        return isoStr;
+      }
+    }
+
+    function formatDateTime(isoStr) {
+      if (!isoStr) return '--';
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return isoStr;
+      }
+    }
+
+    function renderPriorityBadge(priority) {
+      if (priority === 'P0_URGENT') {
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">P0 URGENT</span>`;
+      }
+      if (priority === 'P1_HIGH') {
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">P1 HIGH</span>`;
+      }
+      if (priority === 'P2_MEDIUM') {
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">P2 MEDIUM</span>`;
+      }
+      return `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700/50 text-slate-300">P3 LOW</span>`;
+    }
+
+    function renderStatusBadge(status) {
+      if (status === 'OPEN') {
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">OPEN</span>`;
+      }
+      if (status === 'ESCALATED') {
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600/30 text-rose-300 border border-rose-500/50 animate-pulse">ESCALATED</span>`;
+      }
+      if (status === 'RESOLVED') {
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">RESOLVED</span>`;
+      }
+      return `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-300">${status}</span>`;
+    }
+
+    function renderAuditCategoryBadge(cat) {
+      const map = {
+        'CRISIS': 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        'SECURITY': 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        'BOOKING': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        'PAYMENT': 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+        'TELEPHONY': 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+        'STAFF': 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+        'SYSTEM': 'bg-slate-700/40 text-slate-300 border-slate-600',
+      };
+      const cls = map[cat] || 'bg-slate-800 text-slate-400 border-slate-700';
+      return `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold border ${cls}">${cat}</span>`;
+    }
+
+    async function pollDashboard() {
+      try {
+        const res = await fetch('/api/dashboard');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 1. Update Metrics
+        document.getElementById('metricConfirmed').textContent = data.metrics.confirmed_count;
+        document.getElementById('metricHolds').textContent = data.metrics.active_holds;
+        document.getElementById('metricTasks').textContent = data.metrics.total_open_tasks;
+        document.getElementById('metricP0').textContent = data.metrics.p0_urgent_tasks;
+        document.getElementById('metricP1').textContent = data.metrics.p1_high_tasks;
+        document.getElementById('metricCalls').textContent = data.metrics.calls_count;
+
+        document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        document.getElementById('taskCountBadge').textContent = `${data.tasks.length} Total Tasks`;
+        document.getElementById('slotCountBadge').textContent = `${data.slots.length} Slots`;
+        document.getElementById('callCountBadge').textContent = `${data.calls.length} Calls`;
+
+        // 2. Render Tasks
+        const taskBox = document.getElementById('taskQueueContainer');
+        if (data.tasks.length === 0) {
+          taskBox.innerHTML = '<div class="text-center py-8 text-xs text-slate-500">No active tasks in queue.</div>';
+        } else {
+          taskBox.innerHTML = data.tasks.map(t => {
+            let slaHtml = '';
+            if (t.status === 'RESOLVED') {
+              slaHtml = `<span class="text-emerald-400 text-[10px]">Resolved at ${formatTime(t.resolved_at)}</span>`;
+            } else if (t.is_overdue) {
+              slaHtml = `<span class="text-rose-400 font-bold text-[10px] animate-pulse">SLA BREACHED (Overdue)</span>`;
+            } else if (t.time_left_seconds !== null) {
+              const mins = Math.max(0, Math.floor(t.time_left_seconds / 60));
+              const secs = Math.max(0, t.time_left_seconds % 60);
+              slaHtml = `<span class="text-amber-400 font-mono text-[10px]">SLA: ${mins}m ${secs}s left</span>`;
+            }
+
+            return `
+              <div class="pt-3 pb-2 flex flex-col space-y-1.5 ${t.priority === 'P0_URGENT' ? 'bg-rose-950/10 -mx-2 px-2 rounded-lg' : ''}">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    ${renderPriorityBadge(t.priority)}
+                    ${renderStatusBadge(t.status)}
+                    <span class="font-mono text-xs text-slate-400">${t.task_id}</span>
+                  </div>
+                  <div>${slaHtml}</div>
+                </div>
+                <div class="text-xs font-semibold text-slate-200">${t.title}</div>
+                <div class="text-[11px] text-slate-400 leading-relaxed">${t.description}</div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                  <span>Assigned: <strong class="text-slate-300">${t.assigned_to || 'Unassigned'}</strong> (${t.patient_name})</span>
+                  <span>Due: ${formatDateTime(t.due_date)}</span>
+                </div>
+                ${t.resolution_notes ? `<div class="text-[10px] text-emerald-400/90 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-500/20">${t.resolution_notes}</div>` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+
+        // 3. Render Calendar Slots
+        const calBody = document.getElementById('calendarTableBody');
+        if (data.slots.length === 0) {
+          calBody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500">No slots available.</td></tr>';
+        } else {
+          calBody.innerHTML = data.slots.map(s => {
+            let statusPill = '';
+            if (s.is_booked) {
+              statusPill = '<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Booked</span>';
+            } else if (s.is_held) {
+              statusPill = '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">Held (15m)</span>';
+            } else {
+              statusPill = '<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>';
+            }
+
+            return `
+              <tr class="hover:bg-slate-900/60 transition-colors">
+                <td class="py-2.5 px-4 font-bold text-slate-200">${s.slot_id}</td>
+                <td class="py-2.5 px-4 text-slate-300 font-sans">${s.clinician_name}</td>
+                <td class="py-2.5 px-4 text-slate-400">${formatDateTime(s.start_time)}</td>
+                <td class="py-2.5 px-4">${statusPill}</td>
+                <td class="py-2.5 px-4 text-slate-400 text-[10px]">${s.held_by_booking_id || '--'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 4. Render Call Log
+        const callBox = document.getElementById('callLogContainer');
+        if (data.calls.length === 0) {
+          callBox.innerHTML = '<div class="text-center py-6 text-slate-500">No calls recorded.</div>';
+        } else {
+          callBox.innerHTML = data.calls.map(c => {
+            const isMissed = c.status === 'MISSED' || c.status === 'UNANSWERED';
+            const badge = isMissed 
+              ? '<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[9px]">MISSED</span>'
+              : '<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-[9px]">ANSWERED</span>';
+            
+            return `
+              <div class="pt-2 pb-1.5 flex items-start justify-between">
+                <div>
+                  <div class="flex items-center space-x-2">
+                    ${badge}
+                    <span class="font-mono text-slate-200 font-medium">${c.caller_phone_masked || c.caller_phone}</span>
+                    <span class="text-slate-400 text-[11px]">(${c.patient_name || 'Caller'})</span>
+                  </div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">
+                    ${isMissed ? 'P1 Callback Task Created (30m SLA)' : `Duration: ${c.duration_seconds || 45}s • Agent: ${c.agent_id || 'Reception'}`}
+                  </div>
+                </div>
+                <div class="text-[10px] text-slate-500 font-mono">${formatTime(c.timestamp)}</div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // 5. Render Audit Chain
+        const auditBox = document.getElementById('auditLogContainer');
+        if (data.audit_log.length === 0) {
+          auditBox.innerHTML = '<div class="text-center py-6 text-slate-500">Ledger empty.</div>';
+        } else {
+          auditBox.innerHTML = data.audit_log.map(a => `
+            <div class="pt-2 pb-1.5 flex flex-col space-y-0.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-slate-500 text-[10px]">#${a.seq}</span>
+                  ${renderAuditCategoryBadge(a.category)}
+                  <span class="text-purple-400 text-[10px]">${a.hash}</span>
+                </div>
+                <span class="text-slate-500 text-[10px]">${formatTime(a.timestamp)}</span>
+              </div>
+              <div class="text-[11px] text-slate-300 font-sans leading-tight pt-0.5">${a.message}</div>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        console.warn('Dashboard poll error:', err);
+      }
+    }
+
+    // Initial poll and recurring 2-second interval
+    pollDashboard();
+    setInterval(pollDashboard, 2000);
+  </script>
+</body>
+</html>

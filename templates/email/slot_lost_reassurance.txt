@@ -1,0 +1,10 @@
+Dear {{patient_first_name}},
+
+We received your payment of INR {{amount_inr}} (Reference: {{payment_ref}}). However, because payment completed after the 15-minute hold elapsed, that specific slot was released.
+
+YOUR PAYMENT IS 100% SECURE:
+Our senior care coordinator has already created a priority desk task. We will contact you shortly to allocate your preferred alternative slot or process an immediate full refund to your original payment method.
+
+Desk Line: {{clinic_phone}}
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038

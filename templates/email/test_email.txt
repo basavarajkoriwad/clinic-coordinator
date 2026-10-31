@@ -1,0 +1,13 @@
+Dear {{patient_name}},
+
+This is a test notification from The Bengaluru Clinic Mail Engine.
+
+Mail Mode: {{mail_mode}}
+Recipient: {{recipient_email}}
+Timestamp: {{sent_time_str}}
+Transport: {{transport_info}}
+
+All systems are operational.
+
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038

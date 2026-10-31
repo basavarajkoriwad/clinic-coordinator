@@ -1,0 +1,10 @@
+Dear {{patient_first_name}},
+
+This is a reminder of your consultation with {{doctor_name}} scheduled for {{appointment_time_str}}.
+
+Location:
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038
+Please arrive 10 minutes prior to your scheduled time.
+
+Desk Line: {{clinic_phone}}
+The Bengaluru Clinic

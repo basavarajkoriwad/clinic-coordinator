@@ -1,0 +1,12 @@
+Dear {{patient_first_name}},
+
+Your appointment with {{doctor_name}} has been rescheduled.
+
+UPDATED CONSULTATION:
+- Clinician: {{doctor_name}}
+- New Date & Time: {{appointment_time_str}}
+- Location: Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru
+- Booking ID: {{booking_id}}
+
+The Bengaluru Clinic
+Telephony: {{clinic_phone}}

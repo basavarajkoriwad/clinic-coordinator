@@ -1,0 +1,17 @@
+<p>Dear <strong>{{patient_first_name}}</strong>,</p>
+<p>We received your payment of <strong>INR {{amount_inr}}</strong> (Reference: <code style="font-family: monospace;">{{payment_ref}}</code>). However, because payment was completed after the 15-minute slot reservation elapsed, your selected appointment time was automatically released.</p>
+
+<div class="card" style="border-left: 4px solid #f59e0b;">
+  <div style="font-weight: 700; color: #b45309; margin-bottom: 6px;">Your Payment Is 100% Secure</div>
+  <p style="margin: 0; font-size: 13px; color: #475569;">
+    Our senior care coordinator has already created a priority desk task. We will contact you shortly to allocate your preferred alternative slot or process an immediate full refund to your original payment method.
+  </p>
+</div>
+
+<div style="text-align: center; margin: 24px 0;">
+  <a href="{{site_url}}" class="btn" target="_blank">View Clinic Desk & Options</a>
+</div>
+
+<p style="font-size: 12px; color: #64748b;">
+  You can also reach our front-desk team directly at <strong>{{clinic_phone}}</strong>.
+</p>

@@ -1,0 +1,11 @@
+Dear {{patient_first_name}},
+
+Thank you for your payment of INR {{amount_inr}} (Reference: {{payment_ref}}).
+
+Your payment is confirmed. During calendar synchronization, our scheduling service experienced a brief delay. Your reservation hold has been extended to 60 minutes and our staff is securing your booking manually.
+
+You will receive an updated calendar confirmation shortly.
+
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038
+Telephony: {{clinic_phone}}

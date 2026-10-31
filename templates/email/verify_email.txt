@@ -1,0 +1,12 @@
+Dear {{patient_name}},
+
+Thank you for creating an account with The Bengaluru Clinic.
+
+To activate your account and schedule appointments securely, please verify your email address by visiting:
+{{verify_url}}
+
+This single-use link is valid for 24 hours. If you did not create an account, you can safely ignore this email.
+
+The Bengaluru Clinic
+Suite 302, 3rd Floor, Indiranagar 100ft Road, Bengaluru, Karnataka 560038
+Telephony: {{clinic_phone}}
