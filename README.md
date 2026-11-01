@@ -1,6 +1,9 @@
-# The Bengaluru Clinic — Patient Coordination & Booking Coordinator
+# The Bengaluru Clinic - Patient Coordination & Booking Coordinator
 
 Production-grade patient coordination system and booking state machine for sensitive healthcare (sexual health, CBT, and psychiatry) in Bengaluru.
+
+> 🌐 **Live Demo (Runs directly in browser via GitHub Pages — No server or VS Code needed):**
+> **https://basavarajkoriwad.github.io/clinic-coordinator/**
 
 Built with pure Python standard library on the backend (`http.server`) and vanilla HTML/Tailwind CDN on the frontend. No npm or external pip packages required.
 
