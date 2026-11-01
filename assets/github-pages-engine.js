@@ -1,9 +1,18 @@
 /**
- * The Bengaluru Clinic - Client-Side Mock & Simulation Engine for GitHub Pages
- * ----------------------------------------------------------------------------
- * Allows the entire application (Patient Simulator, Scenario Engine, Doctor Picker,
- * and Read-Only Staff Cockpit) to run 100% inside the browser on GitHub Pages
- * without requiring any backend server or external cloud service.
+ * The Bengaluru Clinic - Client-Side Simulation Engine for GitHub Pages
+ * ====================================================================
+ * 100% In-Browser Simulation Engine providing complete parity with Python backend:
+ * - Real clinician list with live fees and appointment slot chips
+ * - Full 15-minute hold lifecycle, order creation & Razorpay modal checkout
+ * - Complete execution for all 6 simulator scenarios:
+ *     1. Happy Path Booking
+ *     2. Late Payment / Slot Lost (P0 Exception with Reschedule / Refund actions)
+ *     3. Setmore 500 Outage (P0 Exception with Calendar Retry Sync)
+ *     4. Shared Phone PIN Gate (Wrong PIN lockout & Correct PIN auth)
+ *     5. Psychiatric Crisis Intercept (P0 Safety Regex, Tele-MANAS lifelines & bot mute)
+ *     6. 2FA Lab Report Vault (OTP verification & secure vault unlock)
+ * - Live Staff Operations Cockpit polling (metrics, tasks, calendar slots, calls, audit log)
+ * - Cross-window state synchronization between WhatsApp simulator & embedded Staff Cockpit
  */
 
 (function () {
@@ -11,10 +20,10 @@
                         window.location.protocol === 'file:' ||
                         window.__FORCE_CLIENT_MOCK__ === true;
 
-  console.log('[Clinic Engine] Zero-Server Engine: ' + (isGitHubPages ? 'ACTIVE (GitHub Pages)' : 'HYBRID (Fallback)'));
+  console.log('[Clinic Engine] Standalone Mode: ' + (isGitHubPages ? 'ACTIVE (GitHub Pages)' : 'HYBRID (Fallback)'));
 
-  // In-Memory Simulation State
-  const CLINICIANS_DATA = [
+  // Database of Scenarios & Clinicians
+  const AVAILABILITY_DATA = [
   {
     "clinician_id": "DOC-101",
     "display_name": "Dr. Ananya Varma",
@@ -28,12 +37,6 @@
         "start_iso": "2026-11-03T10:00:00",
         "end_iso": "2026-11-03T10:50:00",
         "label": "Tomorrow, 10:00 AM"
-      },
-      {
-        "slot_id": "SLOT-A2",
-        "start_iso": "2026-11-03T11:30:00",
-        "end_iso": "2026-11-03T12:20:00",
-        "label": "Tomorrow, 11:30 AM"
       },
       {
         "slot_id": "SLOT-103",
@@ -104,12 +107,6 @@
     "fee": 2000.0,
     "slots": [
       {
-        "slot_id": "SLOT-R1",
-        "start_iso": "2026-11-03T10:30:00",
-        "end_iso": "2026-11-03T11:15:00",
-        "label": "Tomorrow, 10:30 AM"
-      },
-      {
         "slot_id": "SLOT-202",
         "start_iso": "2026-11-03T14:00:00",
         "end_iso": "2026-11-03T14:45:00",
@@ -136,7 +133,7 @@
     ]
   }
 ];
-  const SCENARIOS_DATA = {
+  const SCENARIOS_START_DATA = {
   "happy": {
     "scenario": "happy",
     "status": "request_name",
@@ -252,19 +249,19 @@
         "is_profile_selector": true,
         "profiles": [
           {
-            "id": "PAT-DF02C892",
+            "id": "PAT-49D347B8",
             "name": "Pooja"
           },
           {
-            "id": "PAT-E3D48955",
+            "id": "PAT-D487B202",
             "name": "Sameer"
           }
         ]
       }
     ],
     "profiles": [
-      "PAT-DF02C892",
-      "PAT-E3D48955"
+      "PAT-49D347B8",
+      "PAT-D487B202"
     ]
   },
   "crisis": {
@@ -302,7 +299,7 @@
         "text": "[SYSTEM AUDIT]: Automated AI is now MUTED for this conversation. Clinical escalation active."
       }
     ],
-    "task_id": "TSK-390B86"
+    "task_id": "TSK-6DFB83"
   },
   "lab_report": {
     "scenario": "lab_report",
@@ -331,99 +328,326 @@
     ]
   }
 };
-
-  const state = {
-    patient: {
-      patient_id: "pat_default",
-      name: "Aarav Iyer",
-      first_name: "Aarav",
-      phone: "+919876543210",
-      greeting: "Aarav"
+  const SCENARIOS_RESUME_DATA = {
+  "late_payment": {
+    "scenario": "late_payment",
+    "explainer": {
+      "title": "Scenario 2: Late Payment / Slot Lost (P0 Exception)",
+      "badge": "P0 Urgent Exception",
+      "badge_color": "amber",
+      "problem": "Patient (Aarav) completed UPI payment 16 minutes later\u2014after their 15-minute hold expired. In the meantime, Walk-in patient took the slot.",
+      "detection": "Webhook processor caught that hold expired AND slot.is_booked by another patient, preventing a calendar collision.",
+      "safeguard": "Booking transitioned to PAYMENT_RECEIVED_SLOT_LOST. Generated a P0 Urgent Staff Task with a 15-minute SLA. Sent a reassuring WhatsApp message to the patient.",
+      "staff_action": "Staff must resolve this immediately: either reschedule to the next priority slot or trigger an instant full refund.",
+      "patient_outcome": "Instead of a double-booking conflict or generic payment error, the patient was reassured that the clinic manager is handling their booking personally.",
+      "action_buttons": [
+        {
+          "id": "reschedule_btn",
+          "label": "Reschedule to Alternate Slot (SLOT-103)",
+          "action": "reschedule_slot_lost",
+          "new_slot_id": "SLOT-103",
+          "color": "emerald"
+        },
+        {
+          "id": "refund_btn",
+          "label": "Issue Instant Full Refund (\u20b9 2,500)",
+          "action": "refund_slot_lost",
+          "color": "rose"
+        }
+      ]
     },
-    activeScenario: null,
-    scenarioStep: 0,
-    clinicians: CLINICIANS_DATA,
-    activeBooking: null,
-    metrics: {
-      confirmed_today: 4,
-      active_holds: 1,
-      total_open_tasks: 2,
-      p0_urgent_tasks: 0,
-      p1_high_tasks: 1,
-      calls_count: 3,
-      emails_sent: 12
+    "chat_messages": [
+      {
+        "from": "patient",
+        "text": "I'd like to book with Dr. Ananya Varma."
+      },
+      {
+        "from": "bot",
+        "text": "Hello Aarav. Please complete your payment using the secure link below:\n\nhttps://pay.bengaluru-clinic.in/pay/order_bkg_9942470b\n\nPlease note: You have 15 minutes to complete the payment. If payment is not completed within 15 minutes, your temporary hold will expire automatically and the appointment slot will be released.\n\nYour appointment confirmation will be sent immediately after successful payment."
+      },
+      {
+        "from": "bot",
+        "text": "Hello Aarav. Your 15-minute payment window has ended, and the temporary hold has been released.\n\nIf you still wish to schedule an appointment, please reply or choose from available slots to book again."
+      },
+      {
+        "from": "patient",
+        "text": "[Aarav pays via UPI link 16 mins later after slot was given to someone else]"
+      },
+      {
+        "from": "bot",
+        "text": "Hello Aarav. We received your payment (Ref: pay_a566efe1a5). Due to high demand, our clinic manager is personally finalizing your slot and will call you in 15 minutes."
+      }
+    ],
+    "booking_id": "BKG-9942470B",
+    "task_id": "TSK-6DDA1F",
+    "patient": {
+      "patient_id": "PAT-8B2F5CEE",
+      "name": "Aarav Iyer",
+      "first_name": "Aarav",
+      "phone": "+919876543210"
+    }
+  },
+  "setmore_outage": {
+    "scenario": "setmore_outage",
+    "explainer": {
+      "title": "Scenario 3: Setmore 500 API Outage (P0 Exception)",
+      "badge": "P0 Critical Exception",
+      "badge_color": "rose",
+      "problem": "Patient (Aarav) paid \u20b9 2,000, but Setmore calendar API crashed with a 500 Internal Timeout during CalDAV synchronization.",
+      "detection": "Webhook handler caught the unhandled calendar API exception post-payment capture.",
+      "safeguard": "Booking marked PAYMENT_CAPTURED_BOOKING_FAILED. Created a P0 Critical Task with a 10-minute SLA for Clinic Manager. Patient reassured that payment was captured.",
+      "staff_action": "Staff dashboard provides a 1-click 'Retry Calendar Sync'. If retried twice without success, the task auto-escalates to senior operations.",
+      "patient_outcome": "Patient is not left wondering why their card was charged with no confirmation. They are notified that their calendar slot is being finalized shortly.",
+      "action_buttons": [
+        {
+          "id": "retry_setmore_btn",
+          "label": "1-Click Retry Calendar Sync",
+          "action": "retry_booking",
+          "color": "indigo"
+        }
+      ]
     },
-    tasks: [
+    "chat_messages": [
       {
-        id: "TASK-001",
-        priority: "P1",
-        patient_name: "Rohan K.",
-        patient_phone_masked: "+91 98765 •••••",
-        description: "Scheduled callback for missed call (+91 98765 00123)",
-        assigned_to: "Clinical Reception",
-        due_date: new Date(Date.now() + 20 * 60000).toISOString(),
-        resolution_notes: null,
-        status: "OPEN"
-      }
-    ],
-    slots: [
-      {
-        slot_id: "SLOT-101",
-        clinician_name: "Dr. Ananya Varma",
-        start_time: new Date(Date.now() + 86400000).toISOString(),
-        is_booked: true,
-        is_held: false,
-        held_by_booking_id: "BKG-9921"
+        "from": "patient",
+        "text": "Booking appointment with Dr. Rajesh Rao."
       },
       {
-        slot_id: "SLOT-A2",
-        clinician_name: "Dr. Ananya Varma",
-        start_time: new Date(Date.now() + 92000000).toISOString(),
-        is_booked: false,
-        is_held: true,
-        held_by_booking_id: "BKG-HOLD-15M"
+        "from": "bot",
+        "text": "Hello Aarav. Please complete your payment using the secure link below:\n\nhttps://pay.bengaluru-clinic.in/pay/order_bkg_e75ebb5f\n\nPlease note: You have 15 minutes to complete the payment. If payment is not completed within 15 minutes, your temporary hold will expire automatically and the appointment slot will be released.\n\nYour appointment confirmation will be sent immediately after successful payment."
       },
       {
-        slot_id: "SLOT-B1",
-        clinician_name: "Dr. Rajesh Rao",
-        start_time: new Date(Date.now() + 100000000).toISOString(),
-        is_booked: false,
-        is_held: false,
-        held_by_booking_id: null
-      }
-    ],
-    calls: [
-      {
-        status: "MISSED",
-        caller_phone: "+91 98765 00123",
-        caller_phone_masked: "+91 98765 •••••",
-        patient_name: "Rohan",
-        timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-        duration_seconds: 0,
-        agent_id: "Reception-IVR"
+        "from": "patient",
+        "text": "[Aarav successfully completes payment of \u20b9 2,000]"
       },
       {
-        status: "ANSWERED",
-        caller_phone: "+91 98450 11223",
-        caller_phone_masked: "+91 98450 •••••",
-        patient_name: "Pooja M.",
-        timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
-        duration_seconds: 120,
-        agent_id: "Dr. Ananya Varma"
+        "from": "bot",
+        "text": "Hello Aarav. Your payment of \u20b9 2,000 was received successfully. Your appointment is being registered on the clinician's calendar. You will receive final calendar details shortly."
       }
     ],
-    audit_log: [
+    "booking_id": "BKG-E75EBB5F",
+    "task_id": "TSK-9EF802",
+    "patient": {
+      "patient_id": "PAT-8B2F5CEE",
+      "name": "Aarav Iyer",
+      "first_name": "Aarav",
+      "phone": "+919876543210"
+    }
+  },
+  "lab_report": {
+    "scenario": "lab_report",
+    "explainer": {
+      "title": "Scenario 6: 2FA Lab Report Vault",
+      "badge": "HIPAA / DPDP Compliant",
+      "badge_color": "indigo",
+      "problem": "WhatsApp lock-screen notifications frequently leak sensitive medical tests to unauthorized onlookers.",
+      "detection": "Patient requests lab report results or doctor clinical summary.",
+      "safeguard": "No diagnosis, doctor specialty, or test names appear in the WhatsApp message. Access requires 2FA OTP verification and expires in 10 minutes. Cryptographic audit log records every access.",
+      "staff_action": "Operations dashboard displays audit log of token generation, validation, and viewing IP hash.",
+      "patient_outcome": "Complete peace of mind knowing medical records are shielded by multi-factor authentication.",
+      "action_buttons": [
+        {
+          "id": "verify_otp_btn",
+          "label": "Verify 2FA OTP (729401) & Open Secure Vault",
+          "action": "verify_lab_otp",
+          "color": "indigo"
+        }
+      ]
+    },
+    "chat_messages": [
       {
-        seq: 1,
-        category: "SYSTEM_INIT",
-        hash: "7f83b165...verified",
-        timestamp: new Date().toISOString(),
-        message: "The Bengaluru Clinic Operations Engine initialized. Cryptographic audit chain verified."
+        "from": "patient",
+        "text": "Can I get my latest test results?"
+      },
+      {
+        "from": "bot",
+        "text": "Hello Aarav. Your secure health documents are ready.\n\nFor your medical privacy, access requires two-factor verification. Your 6-digit access code is: 729401 (Valid for 10 minutes).\n\nSecure Vault Link: https://vault.bengaluru-clinic.in/r/v2?auth=729401"
       }
-    ]
-  };
+    ],
+    "otp": "729401",
+    "patient": {
+      "patient_id": "PAT-8B2F5CEE",
+      "name": "Aarav Iyer",
+      "first_name": "Aarav",
+      "phone": "+919876543210"
+    }
+  }
+};
+  const ACTIONS_DATA = {
+  "pay_happy": {
+    "status": "success",
+    "fee": 2500.0,
+    "clinician_name": "Dr. Ananya Varma",
+    "confirmation_message": "\u2713 Appointment Confirmed with Dr. Ananya Varma for Aarav.\n\nMode: In-Person (Suite 302, Indiranagar)\nReceipt & Tax Invoice: TBC-INV-2026-0042",
+    "booking": {
+      "booking_id": "BKG-CONFIRMED"
+    }
+  },
+  "reschedule_slot_lost": {
+    "status": "success",
+    "whatsapp_message": "Hello Aarav. Your appointment has been rescheduled to tomorrow at 3:00 PM with Dr. Ananya Varma. Thank you for your patience."
+  },
+  "refund_slot_lost": {
+    "status": "success",
+    "whatsapp_message": "Hello Aarav. An instant full refund of \u20b9 2,500 has been processed to your UPI account. Reference: RFD-UPI-9921."
+  },
+  "retry_booking": {
+    "status": "resolved",
+    "message": "Appointment confirmed on calendar. Confirmation details dispatched."
+  },
+  "test_wrong_pin": {
+    "success": false,
+    "message": "Incorrect PIN (Attempt 1 of 3). Please verify your 4-digit security PIN."
+  },
+  "test_correct_pin": {
+    "success": true,
+    "message": "PIN verified successfully. Confidential session unlocked for Pooja."
+  },
+  "resolve_crisis": {
+    "status": "resolved",
+    "message": "Counselor connected. Bot unmuted."
+  },
+  "verify_lab_otp": {
+    "status": "success",
+    "report_url": "https://vault.bengaluru-clinic.in/report/LAB-2026-992?token=auth_exp_10m",
+    "message": "2FA Authenticated: Secure Medical Vault Unlocked."
+  }
+};
 
-  let auditSeq = 1;
+  function createInitialState() {
+    return {
+      patient: {
+        patient_id: "pat_aarav_01",
+        name: "Aarav Iyer",
+        first_name: "Aarav",
+        phone: "+919876543210",
+        greeting: "Aarav"
+      },
+      activeScenario: null,
+      scenarioStep: 0,
+      clinicians: AVAILABILITY_DATA,
+      activeBooking: null,
+      metrics: {
+        confirmed_count: 4,
+        confirmed_today: 4,
+        active_holds: 1,
+        total_open_tasks: 1,
+        p0_urgent_tasks: 0,
+        p1_high_tasks: 1,
+        calls_count: 3,
+        emails_sent: 12
+      },
+      tasks: [
+        {
+          task_id: "TASK-001",
+          id: "TASK-001",
+          priority: "P1_HIGH",
+          status: "OPEN",
+          title: "Scheduled Callback for Missed Call",
+          description: "Scheduled callback for missed call (+91 98765 •••••)",
+          patient_name: "Rohan K.",
+          patient_phone_masked: "+91 98765 •••••",
+          assigned_to: "Clinical Reception",
+          due_date: new Date(Date.now() + 20 * 60000).toISOString(),
+          is_overdue: false,
+          time_left_seconds: 1200,
+          resolved_at: null,
+          resolution_notes: null
+        }
+      ],
+      slots: [
+        {
+          slot_id: "SLOT-101",
+          clinician_name: "Dr. Ananya Varma",
+          start_time: new Date(Date.now() + 86400000).toISOString(),
+          is_booked: true,
+          is_held: false,
+          held_by_booking_id: "BKG-9921"
+        },
+        {
+          slot_id: "SLOT-A2",
+          clinician_name: "Dr. Ananya Varma",
+          start_time: new Date(Date.now() + 92000000).toISOString(),
+          is_booked: false,
+          is_held: true,
+          held_by_booking_id: "BKG-HOLD-15M"
+        },
+        {
+          slot_id: "SLOT-B1",
+          clinician_name: "Dr. Rajesh Rao",
+          start_time: new Date(Date.now() + 100000000).toISOString(),
+          is_booked: false,
+          is_held: false,
+          held_by_booking_id: null
+        }
+      ],
+      calls: [
+        {
+          status: "MISSED",
+          caller_phone: "+91 98765 00123",
+          caller_phone_masked: "+91 98765 •••••",
+          patient_name: "Rohan",
+          timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
+          duration_seconds: 0,
+          agent_id: "Reception-IVR"
+        },
+        {
+          status: "ANSWERED",
+          caller_phone: "+91 98450 11223",
+          caller_phone_masked: "+91 98450 •••••",
+          patient_name: "Pooja M.",
+          timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
+          duration_seconds: 120,
+          agent_id: "Dr. Ananya Varma"
+        }
+      ],
+      audit_log: [
+        {
+          seq: 1,
+          category: "SYSTEM",
+          hash: "7f83b165...verified",
+          timestamp: new Date().toISOString(),
+          message: "The Bengaluru Clinic Operations Engine initialized. Cryptographic audit chain verified."
+        }
+      ]
+    };
+  }
+
+  // Shared state helper between parent window and embedded iframe
+  function getSharedState() {
+    try {
+      if (window.top && window.top.__CLINIC_SHARED_STATE__) {
+        return window.top.__CLINIC_SHARED_STATE__;
+      }
+    } catch (e) { }
+
+    try {
+      const stored = sessionStorage.getItem('__CLINIC_STATE__');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        try { if (window.top) window.top.__CLINIC_SHARED_STATE__ = parsed; } catch (e) { }
+        return parsed;
+      }
+    } catch (e) { }
+
+    const initial = createInitialState();
+    try {
+      if (window.top) window.top.__CLINIC_SHARED_STATE__ = initial;
+      sessionStorage.setItem('__CLINIC_STATE__', JSON.stringify(initial));
+    } catch (e) { }
+    return initial;
+  }
+
+  function saveSharedState(s) {
+    try {
+      if (window.top) window.top.__CLINIC_SHARED_STATE__ = s;
+      sessionStorage.setItem('__CLINIC_STATE__', JSON.stringify(s));
+    } catch (e) { }
+  }
+
+  const state = getSharedState();
+
+  let auditSeq = state.audit_log.length ? state.audit_log[0].seq : 1;
   function logAudit(category, message) {
     auditSeq++;
     const hash = Array.from(crypto.getRandomValues(new Uint8Array(8)))
@@ -435,7 +659,8 @@
       timestamp: new Date().toISOString(),
       message: message
     });
-    if (state.audit_log.length > 30) state.audit_log.pop();
+    if (state.audit_log.length > 35) state.audit_log.pop();
+    saveSharedState(state);
   }
 
   // Intercept fetch calls for API endpoints
@@ -456,7 +681,7 @@
           return response;
         }
       } catch (err) {
-        console.warn('[Clinic Engine] Backend unreachable at ' + url + '. Falling back to In-Browser Engine.');
+        console.warn('[Clinic Engine] Local backend offline. Using In-Browser Engine for ' + url);
       }
     }
 
@@ -496,7 +721,7 @@
         status: "online",
         clinicians: state.clinicians.length,
         open_tasks: state.tasks.filter(t => t.status === 'OPEN').length,
-        p0_tasks: state.tasks.filter(t => t.priority === 'P0' && t.status === 'OPEN').length,
+        p0_tasks: state.tasks.filter(t => t.priority === 'P0_URGENT' && t.status === 'OPEN').length,
         active_bookings: 3,
         emails_sent: state.metrics.emails_sent,
         active_scenario: state.activeScenario
@@ -508,22 +733,24 @@
 
     // 4. GET /api/dashboard
     if (path === '/api/dashboard' && method === 'GET') {
-      const openTasks = state.tasks.filter(t => t.status === 'OPEN');
-      const p0 = openTasks.filter(t => t.priority === 'P0').length;
-      const p1 = openTasks.filter(t => t.priority === 'P1').length;
-      state.metrics.total_open_tasks = openTasks.length;
-      state.metrics.p0_urgent_tasks = p0;
-      state.metrics.p1_high_tasks = p1;
+      // Refresh state from storage in case parent updated it
+      const current = getSharedState();
+      const openTasks = current.tasks.filter(t => t.status === 'OPEN');
+      const p0 = openTasks.filter(t => t.priority === 'P0_URGENT' || t.priority === 'P0').length;
+      const p1 = openTasks.filter(t => t.priority === 'P1_HIGH' || t.priority === 'P1').length;
+      current.metrics.total_open_tasks = openTasks.length;
+      current.metrics.p0_urgent_tasks = p0;
+      current.metrics.p1_high_tasks = p1;
 
       return new Response(JSON.stringify({
-        metrics: state.metrics,
-        tasks: state.tasks,
-        slots: state.slots,
-        clinicians: state.clinicians,
-        calls: state.calls,
-        audit_log: state.audit_log,
+        metrics: current.metrics,
+        tasks: current.tasks,
+        slots: current.slots,
+        clinicians: current.clinicians,
+        calls: current.calls,
+        audit_log: current.audit_log,
         ai_muted_phones: [],
-        active_scenario: state.activeScenario
+        active_scenario: current.activeScenario
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -548,9 +775,11 @@
       };
 
       state.metrics.active_holds++;
-      logAudit('SLOT_HOLD_ESTABLISHED', '15-minute countdown hold established for ' + patientName + ' on slot ' + slotId + '.');
+      logAudit('BOOKING', '15-minute countdown hold established for ' + patientName + ' on slot ' + slotId + '.');
 
       const waMsg = 'Hello ' + (state.patient.first_name || patientName.split(' ')[0]) + ', your 15-minute hold for ' + (clinician ? clinician.display_name : 'Dr. Ananya Varma') + ' has started. Please complete your payment of ₹' + Number(fee).toLocaleString() + ' via the secure link below to confirm your appointment.';
+
+      saveSharedState(state);
 
       return new Response(JSON.stringify({
         status: "success",
@@ -573,22 +802,28 @@
       const text = (body.text || '').trim();
       const lower = text.toLowerCase();
 
-      // Crisis check
+      // Crisis regex check
       const crisisPattern = /\b(suicide|kill myself|end my life|ending it all|hang myself|slit my wrist|overdose|want to die|end it all)\b/i;
       if (crisisPattern.test(lower)) {
         state.tasks.unshift({
-          id: "TASK-CRISIS-" + Date.now(),
-          priority: "P0",
+          task_id: "TASK-CRISIS-" + Date.now().toString().slice(-4),
+          id: "TASK-CRISIS-" + Date.now().toString().slice(-4),
+          priority: "P0_URGENT",
+          status: "OPEN",
+          title: "CRISIS INTERCEPT: Distress Expression Detected",
           patient_name: (state.patient.first_name || 'Patient') + ' (Distress Alert)',
           patient_phone_masked: "+91 98765 •••••",
           description: "CRISIS INTERCEPT: Distress language detected in WhatsApp session. Immediate psychiatric triage required.",
           assigned_to: "Duty Psychiatrist",
           due_date: new Date(Date.now() + 5 * 60000).toISOString(),
-          resolution_notes: null,
-          status: "OPEN"
+          is_overdue: false,
+          time_left_seconds: 300,
+          resolved_at: null,
+          resolution_notes: null
         });
         state.metrics.p0_urgent_tasks++;
-        logAudit('CRISIS_INTERCEPT', 'Distress expression detected. Bot muted. Tele-MANAS emergency lifelines sent.');
+        logAudit('CRISIS', 'Distress expression detected. Bot muted. Tele-MANAS emergency lifelines sent.');
+        saveSharedState(state);
 
         return new Response(JSON.stringify({
           reply: 'I hear that you are going through immense emotional distress right now, ' + (state.patient.first_name || 'friend') + '. Please know that you are not alone, and help is available right now.\n\n' +
@@ -605,17 +840,85 @@
         });
       }
 
-      // Name recognition
+      // Patient typed their name
       if (/^[a-zA-Z\s]{2,30}$/.test(text) && !lower.includes('hello') && !lower.includes('book') && !lower.includes('fee')) {
         const parts = text.split(/\s+/);
         state.patient.name = text;
         state.patient.first_name = parts[0];
-        logAudit('PATIENT_IDENTIFIED', 'Patient identified as ' + state.patient.name + '.');
+        logAudit('BOOKING', 'Patient identified as ' + state.patient.name + '.');
 
+        // Check if an interactive scenario was waiting for patient name (Scenario 2, 3, or 6)
+        if (state.activeScenario && SCENARIOS_RESUME_DATA[state.activeScenario]) {
+          const resData = JSON.parse(JSON.stringify(SCENARIOS_RESUME_DATA[state.activeScenario]));
+          resData.patient = {
+            patient_id: state.patient.patient_id,
+            name: state.patient.name,
+            first_name: state.patient.first_name,
+            phone: state.patient.phone
+          };
+
+          if (state.activeScenario === 'late_payment') {
+            state.tasks.unshift({
+              task_id: "TASK-LATE-" + Date.now().toString().slice(-4),
+              id: "TASK-LATE-" + Date.now().toString().slice(-4),
+              priority: "P0_URGENT",
+              status: "OPEN",
+              title: "SLOT LOST: Payment Received After Hold Expiration",
+              patient_name: state.patient.name + " (+91 98765 3210)",
+              patient_phone_masked: "+91 98765 •••••",
+              description: "Patient Aarav paid ₹2,500 after 15-minute hold expired. Slot SLOT-101 was released to another patient.",
+              assigned_to: "Duty Clinical Coordinator",
+              due_date: new Date(Date.now() + 10 * 60000).toISOString(),
+              is_overdue: false,
+              time_left_seconds: 600,
+              resolved_at: null,
+              resolution_notes: null
+            });
+            state.metrics.p0_urgent_tasks++;
+            logAudit('BOOKING', 'P0 Task raised: Late payment detected for slot SLOT-101. Hold expired.');
+          } else if (state.activeScenario === 'setmore_outage') {
+            state.tasks.unshift({
+              task_id: "TASK-SETMORE-" + Date.now().toString().slice(-4),
+              id: "TASK-SETMORE-" + Date.now().toString().slice(-4),
+              priority: "P0_URGENT",
+              status: "OPEN",
+              title: "SETMORE SYNC FAILED: Calendar API 500 Outage",
+              patient_name: state.patient.name,
+              patient_phone_masked: "+91 98765 •••••",
+              description: "Setmore Calendar API returned 500 Internal Server Error. Fallback queue captured booking.",
+              assigned_to: "Technical Operations",
+              due_date: new Date(Date.now() + 15 * 60000).toISOString(),
+              is_overdue: false,
+              time_left_seconds: 900,
+              resolved_at: null,
+              resolution_notes: null
+            });
+            state.metrics.p0_urgent_tasks++;
+            logAudit('SYSTEM', 'P0 Task raised: Setmore API 500 outage. Fallback booking buffered.');
+          }
+
+          logAudit('BOOKING', 'Scenario ' + state.activeScenario + ' resumed for ' + state.patient.name);
+          saveSharedState(state);
+
+          return new Response(JSON.stringify({
+            status: "scenario_resume",
+            kind: "scenario_resume",
+            data: resData,
+            ...resData
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Default: Open Doctor Picker for Happy Path
+        saveSharedState(state);
         return new Response(JSON.stringify({
+          status: "success",
+          kind: "doctor_picker",
           reply: 'Thank you, ' + state.patient.first_name + '. Welcome to The Bengaluru Clinic. How can we support you today? Tap below to view our clinicians, schedules, and consultation fees.',
           patient: state.patient,
-          kind: 'doctor_picker',
+          clinicians: state.clinicians,
           buttons: [{ label: "Browse Clinicians & Fees", action: "open_doctor_picker" }]
         }), {
           status: 200,
@@ -655,8 +958,34 @@
       state.activeScenario = scenarioKey;
       state.scenarioStep = 0;
 
-      const scData = SCENARIOS_DATA[scenarioKey] || SCENARIOS_DATA['happy'];
-      logAudit('SCENARIO_STARTED', 'Scenario ' + scenarioKey + ' started.');
+      if (scenarioKey === 'crisis') {
+        state.tasks.unshift({
+          task_id: "TASK-CRISIS-" + Date.now().toString().slice(-4),
+          id: "TASK-CRISIS-" + Date.now().toString().slice(-4),
+          priority: "P0_URGENT",
+          status: "OPEN",
+          title: "CRISIS INTERCEPT: Immediate Psychiatric Triage Required",
+          patient_name: "Patient (Distress Alert)",
+          patient_phone_masked: "+91 98765 •••••",
+          description: "CRISIS INTERCEPT: Distress language detected in WhatsApp session. Immediate psychiatric triage required.",
+          assigned_to: "Duty Psychiatrist",
+          due_date: new Date(Date.now() + 5 * 60000).toISOString(),
+          is_overdue: false,
+          time_left_seconds: 300,
+          resolved_at: null,
+          resolution_notes: null
+        });
+        state.metrics.p0_urgent_tasks++;
+        logAudit('CRISIS', 'Psychiatric crisis scenario started. Distress language detected. Bot muted.');
+      } else if (scenarioKey === 'shared_phone') {
+        logAudit('SECURITY', 'Shared phone PIN gate scenario started. PIN authentication challenge dispatched.');
+      } else {
+        logAudit('SYSTEM', 'Scenario ' + scenarioKey + ' started.');
+      }
+
+      saveSharedState(state);
+
+      const scData = SCENARIOS_START_DATA[scenarioKey] || SCENARIOS_START_DATA['happy'];
 
       return new Response(JSON.stringify({
         status: "success",
@@ -670,106 +999,61 @@
     // 8. POST /api/simulate/action
     if (path === '/api/simulate/action' && method === 'POST') {
       const action = body.action || 'pay_happy';
+      const actionResponse = ACTIONS_DATA[action] || { status: "success" };
 
       if (action === 'pay_happy') {
-        const fee = state.activeBooking ? state.activeBooking.fee : 2500;
-        const docName = state.activeBooking ? state.activeBooking.clinician_name : 'Dr. Ananya Varma';
-        const pName = state.patient.first_name || 'Aarav';
-
+        state.metrics.confirmed_count++;
         state.metrics.confirmed_today++;
         state.metrics.active_holds = Math.max(0, state.metrics.active_holds - 1);
         state.metrics.emails_sent += 2;
-        logAudit('PAYMENT_CONFIRMED', 'Payment of ₹' + Number(fee).toLocaleString() + ' captured for ' + pName + '. Appointment confirmed.');
-
-        return new Response(JSON.stringify({
-          status: "success",
-          fee: fee,
-          clinician_name: docName,
-          confirmation_message: '✓ Payment Confirmed! Your appointment with ' + docName + ' is confirmed for Tomorrow, 10:00 AM.\n\nMode: In-Person (Suite 302, Indiranagar)\nReceipt & Tax Invoice: TBC-INV-2026-0042',
-          booking: { booking_id: state.activeBooking ? state.activeBooking.booking_id : 'BKG-CONFIRMED' }
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        logAudit('PAYMENT', 'Payment of ₹2,500 captured for ' + state.patient.first_name + '. Appointment confirmed.');
+      } else if (action === 'reschedule_slot_lost') {
+        const lateTask = state.tasks.find(t => t.id && t.id.includes('LATE'));
+        if (lateTask) {
+          lateTask.status = "RESOLVED";
+          lateTask.resolved_at = new Date().toISOString();
+          lateTask.resolution_notes = "Alternate priority slot SLOT-103 offered and accepted.";
+        }
+        state.metrics.p0_urgent_tasks = Math.max(0, state.metrics.p0_urgent_tasks - 1);
+        logAudit('BOOKING', 'Patient Aarav rescheduled to alternate slot SLOT-103.');
+      } else if (action === 'refund_slot_lost') {
+        const lateTask = state.tasks.find(t => t.id && t.id.includes('LATE'));
+        if (lateTask) {
+          lateTask.status = "RESOLVED";
+          lateTask.resolved_at = new Date().toISOString();
+          lateTask.resolution_notes = "Full UPI refund of ₹2,500 issued.";
+        }
+        state.metrics.p0_urgent_tasks = Math.max(0, state.metrics.p0_urgent_tasks - 1);
+        logAudit('PAYMENT', 'Full UPI refund of ₹2,500 processed for Aarav.');
+      } else if (action === 'retry_booking') {
+        const setmoreTask = state.tasks.find(t => t.id && t.id.includes('SETMORE'));
+        if (setmoreTask) {
+          setmoreTask.status = "RESOLVED";
+          setmoreTask.resolved_at = new Date().toISOString();
+          setmoreTask.resolution_notes = "Calendar sync successful on retry attempt 2.";
+        }
+        state.metrics.p0_urgent_tasks = Math.max(0, state.metrics.p0_urgent_tasks - 1);
+        logAudit('BOOKING', 'Setmore calendar outage resolved. Appointment synched.');
+      } else if (action === 'test_wrong_pin') {
+        logAudit('SECURITY', 'PIN authentication failed for +91 98765 43210 (Attempt 1 of 3).');
+      } else if (action === 'test_correct_pin') {
+        logAudit('SECURITY', 'PIN 4321 verified. Discrete session unlocked for Pooja.');
+      } else if (action === 'resolve_crisis') {
+        const crisisTask = state.tasks.find(t => t.id && t.id.includes('CRISIS'));
+        if (crisisTask) {
+          crisisTask.status = "RESOLVED";
+          crisisTask.resolved_at = new Date().toISOString();
+          crisisTask.resolution_notes = "Duty psychiatrist Dr. Maya Nambiar reached patient via phone.";
+        }
+        state.metrics.p0_urgent_tasks = Math.max(0, state.metrics.p0_urgent_tasks - 1);
+        logAudit('CRISIS', 'On-call psychiatrist connected with patient. AI bot unmuted.');
+      } else if (action === 'verify_lab_otp') {
+        logAudit('SECURITY', '2FA OTP verified. Secure medical vault opened.');
       }
 
-      if (action === 'reschedule_slot_lost') {
-        state.tasks.unshift({
-          id: "TASK-RESCHED-" + Date.now(),
-          priority: "P0",
-          patient_name: "Aarav (****3210)",
-          patient_phone_masked: "+91 98765 •••••",
-          description: "SLOT LOST: Alternate priority slot offered and accepted.",
-          assigned_to: "Clinic Manager",
-          due_date: new Date(Date.now() + 15 * 60000).toISOString(),
-          resolution_notes: "Rebooked for 02:00 PM",
-          status: "RESOLVED"
-        });
-        logAudit('SLOT_LOST_RESCHEDULED', 'Patient Aarav rescheduled to alternate slot SLOT-A3.');
-        return new Response(JSON.stringify({
-          status: "success",
-          whatsapp_message: 'Your payment was applied to the alternate priority slot: Tomorrow at 02:00 PM with Dr. Ananya Varma. Updated confirmation dispatched.'
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
+      saveSharedState(state);
 
-      if (action === 'retry_booking') {
-        logAudit('SETMORE_SYNC_RECOVERED', 'Setmore calendar outage resolved. Appointment synched.');
-        return new Response(JSON.stringify({
-          status: "resolved",
-          result: { success: true, message: "Calendar synched cleanly." }
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-
-      if (action === 'test_wrong_pin') {
-        return new Response(JSON.stringify({
-          success: false,
-          message: "Incorrect PIN (Attempt 1 of 3). Please verify your 4-digit security PIN."
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-
-      if (action === 'test_correct_pin') {
-        logAudit('PIN_VERIFIED', 'PIN 4321 verified. Discrete session unlocked for Pooja.');
-        return new Response(JSON.stringify({
-          success: true,
-          message: "PIN verified successfully. Confidential session unlocked for Pooja."
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-
-      if (action === 'resolve_crisis') {
-        logAudit('CRISIS_RESOLVED', 'On-call psychiatrist connected with patient. AI bot unmuted.');
-        return new Response(JSON.stringify({
-          status: "resolved",
-          result: { success: true, message: "Counselor connected. Bot unmuted." }
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-
-      if (action === 'verify_lab_otp') {
-        logAudit('2FA_VAULT_UNLOCKED', '2FA OTP verified. Secure lab reports opened.');
-        return new Response(JSON.stringify({
-          status: "success",
-          message: "2FA Authenticated: Secure Lab Report Vault Unlocked."
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-
-      return new Response(JSON.stringify({ status: "success" }), {
+      return new Response(JSON.stringify(actionResponse), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -777,10 +1061,10 @@
 
     // 9. POST /api/simulate/reset
     if (path === '/api/simulate/reset' && method === 'POST') {
-      state.activeScenario = null;
-      state.metrics.confirmed_today = 4;
-      state.metrics.active_holds = 1;
-      logAudit('SYSTEM_RESET', 'Simulation state reset to clean baseline.');
+      const freshState = createInitialState();
+      Object.assign(state, freshState);
+      saveSharedState(state);
+      logAudit('SYSTEM', 'Simulation state reset to clean baseline.');
 
       return new Response(JSON.stringify({ status: "reset_complete" }), {
         status: 200,
@@ -792,18 +1076,33 @@
     if (path === '/api/call/inbound' && method === 'POST') {
       state.metrics.calls_count++;
       state.tasks.unshift({
-        id: "TASK-CALL-" + Date.now(),
-        priority: "P1",
+        task_id: "TASK-CALL-" + Date.now().toString().slice(-4),
+        id: "TASK-CALL-" + Date.now().toString().slice(-4),
+        priority: "P1_HIGH",
+        status: "OPEN",
+        title: "P1 Missed Call Callback (30m SLA)",
         patient_name: "Inbound Caller",
         patient_phone_masked: "+91 98765 •••••",
-        description: 'Missed call callback task for ' + (body.phone || '+91 98765 43210'),
+        description: 'Missed call callback task for ' + (body.phone || '+91 98765 00123'),
         assigned_to: "Reception Frontdesk",
         due_date: new Date(Date.now() + 30 * 60000).toISOString(),
-        resolution_notes: null,
-        status: "OPEN"
+        is_overdue: false,
+        time_left_seconds: 1800,
+        resolved_at: null,
+        resolution_notes: null
+      });
+      state.calls.unshift({
+        status: "MISSED",
+        caller_phone: body.phone || "+91 98765 00123",
+        caller_phone_masked: "+91 98765 •••••",
+        patient_name: "Inbound Caller",
+        timestamp: new Date().toISOString(),
+        duration_seconds: 0,
+        agent_id: "Reception-IVR"
       });
       state.metrics.p1_high_tasks++;
-      logAudit('INBOUND_CALL', 'Inbound missed call received. P1 30-minute callback task scheduled.');
+      logAudit('TELEPHONY', 'Inbound missed call received. P1 30-minute callback task scheduled.');
+      saveSharedState(state);
 
       return new Response(JSON.stringify({
         status: "recorded",
